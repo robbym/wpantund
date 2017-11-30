@@ -45,6 +45,8 @@
 #include <algorithm>
 #include "any-to.h"
 #include "wpan-dbus-v0.h"
+#include "DBusIntrospection.h"
+#include <map>
 
 using namespace DBUSHelpers;
 using namespace nl;
@@ -282,6 +284,24 @@ DBUSIPCServer::add_interface(NCPControlInterface* instance)
 	return 0;
 }
 
+Node introspect = Node()
+	.add(Node("org")
+		.add(Node("wpantund")
+			.add(Node("wpan0")
+				.add(Interface("org.freedesktop.DBus.Introspectable")
+					.add(Method("Introspect")
+						.add(Arg("xml_data", "s", "out"))
+					)
+				)
+				.add(Interface("org.wpantund.v1")
+					.add(Method("Reset"))
+				)
+			)
+		)
+	);
+std::map<std::string, std::string> introspect_cache;
+std::map<std::string, const char *> introspect_ptr_cache;
+
 DBusHandlerResult
 DBUSIPCServer::message_handler(
     DBusConnection *connection,
@@ -290,7 +310,31 @@ DBUSIPCServer::message_handler(
 {
 	DBusHandlerResult ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-	if (dbus_message_is_method_call(message, WPAN_TUNNEL_DBUS_INTERFACE,
+	if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect")) {
+		std::string path = dbus_message_get_path(message);
+		const char **xml_data;
+
+		if (introspect_cache.find(path) == introspect_cache.end()) {
+			std::string rendered = introspect.introspect(path.c_str());
+			introspect_cache.insert(make_pair(path, rendered));
+			introspect_ptr_cache.insert(make_pair(path, introspect_cache[path].c_str()));
+		}
+		std::map<std::string, const char *>::iterator it = introspect_ptr_cache.find(path);
+		if (it != introspect_ptr_cache.end()) {
+			xml_data = &introspect_ptr_cache[path];
+		}
+
+		DBusMessage *reply = dbus_message_new_method_return(message);
+		dbus_message_append_args(
+			reply,
+			DBUS_TYPE_STRING, xml_data,
+			DBUS_TYPE_INVALID
+			);
+		dbus_connection_send(connection, reply, NULL);
+		dbus_message_unref(reply);
+
+		ret = DBUS_HANDLER_RESULT_HANDLED;
+	} else if (dbus_message_is_method_call(message, WPAN_TUNNEL_DBUS_INTERFACE,
 	                                WPAN_TUNNEL_CMD_GET_INTERFACES)) {
 		DBusMessage *reply = dbus_message_new_method_return(message);
 		DBusMessageIter iter, array_iter;

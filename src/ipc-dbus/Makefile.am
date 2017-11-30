@@ -52,6 +52,8 @@ libwpantund_dbus_la_SOURCES = \
 	DBusIPCAPI_v0.cpp \
 	DBusIPCAPI_v0.h \
 	wpan-dbus-v0.h \
+	DBusIntrospection.h \
+	DBusIntrospection.cpp \
 	../util/DBUSHelpers.cpp \
 	$(NULL)
 
