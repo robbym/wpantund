@@ -117,6 +117,7 @@ Method& Method::add(Arg arg)
 
 
 
+
 Arg::Arg(const char *name, const char *type, const char *direction) : name(name), type(type), direction(direction) {}
 std::string Arg::render()
 {
@@ -131,4 +132,23 @@ std::string Arg::render()
 	result += "\"/>";
 
 	return result;
+}
+
+
+
+
+IntrospectionCache::IntrospectionCache(Node node) : node(node) {}
+const char **IntrospectionCache::lookup(const char *path)
+{
+	if (this->cache.find(path) == this->cache.end()) {
+		std::string rendered = this->node.introspect(path);
+		this->cache.insert(std::make_pair(path, rendered));
+		this->ptr_cache.insert(std::make_pair(path, this->cache[path].c_str()));
+	}
+	std::map<std::string, const char *>::iterator it = this->ptr_cache.find(path);
+	if (it != this->ptr_cache.end()) {
+		return &this->ptr_cache[path];
+	} else {
+		throw;
+	}
 }

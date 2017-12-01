@@ -46,7 +46,6 @@
 #include "any-to.h"
 #include "wpan-dbus-v0.h"
 #include "DBusIntrospection.h"
-#include <map>
 
 using namespace DBUSHelpers;
 using namespace nl;
@@ -284,7 +283,7 @@ DBUSIPCServer::add_interface(NCPControlInterface* instance)
 	return 0;
 }
 
-Node introspect = Node()
+IntrospectionCache introspection_cache (Node()
 	.add(Node("org")
 		.add(Node("wpantund")
 			.add(Node("wpan0")
@@ -317,9 +316,7 @@ Node introspect = Node()
 				)
 			)
 		)
-	);
-std::map<std::string, std::string> introspect_cache;
-std::map<std::string, const char *> introspect_ptr_cache;
+	));
 
 DBusHandlerResult
 DBUSIPCServer::message_handler(
@@ -330,18 +327,8 @@ DBUSIPCServer::message_handler(
 	DBusHandlerResult ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
 	if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect")) {
-		std::string path = dbus_message_get_path(message);
-		const char **xml_data;
-
-		if (introspect_cache.find(path) == introspect_cache.end()) {
-			std::string rendered = introspect.introspect(path.c_str());
-			introspect_cache.insert(make_pair(path, rendered));
-			introspect_ptr_cache.insert(make_pair(path, introspect_cache[path].c_str()));
-		}
-		std::map<std::string, const char *>::iterator it = introspect_ptr_cache.find(path);
-		if (it != introspect_ptr_cache.end()) {
-			xml_data = &introspect_ptr_cache[path];
-		}
+		const char *path = dbus_message_get_path(message);
+		const char **xml_data = introspection_cache.lookup(path);
 
 		DBusMessage *reply = dbus_message_new_method_return(message);
 		dbus_message_append_args(

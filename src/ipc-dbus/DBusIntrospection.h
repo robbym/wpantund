@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <map>
 
 class Node;
 class Interface;
@@ -74,3 +75,13 @@ public:
 
 
 
+
+class IntrospectionCache {
+	Node node;
+	std::map<std::string, std::string> cache;
+	std::map<std::string, const char *> ptr_cache;
+public:
+	IntrospectionCache(Node node);
+
+	const char **lookup(const char *);
+};
