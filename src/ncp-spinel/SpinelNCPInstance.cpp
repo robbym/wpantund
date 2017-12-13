@@ -946,6 +946,9 @@ SpinelNCPInstance::property_get_value(
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadDebugTestAssert)) {
 		SIMPLE_SPINEL_GET(SPINEL_PROP_DEBUG_TEST_ASSERT, SPINEL_DATATYPE_BOOL_S);
 
+	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_OpenThreadDebugTestWatchdog)) {
+		SIMPLE_SPINEL_GET(SPINEL_PROP_DEBUG_TEST_WATCHDOG, SPINEL_DATATYPE_BOOL_S);
+
 	} else if (strcaseequal(key.c_str(), kWPANTUNDProperty_MACWhitelistEnabled)) {
 		if (!mCapabilities.count(SPINEL_CAP_MAC_WHITELIST)) {
 			cb(kWPANTUNDStatus_FeatureNotSupported, boost::any(std::string("MAC whitelist feature not supported by NCP")));
@@ -2816,7 +2819,7 @@ SpinelNCPInstance::handle_ncp_spinel_value_is(spinel_prop_key_t key, const uint8
 			num_router++;
 			syslog(LOG_INFO, "[-NCP-] Router: %02d %s", num_router, it->get_as_string().c_str());
 		}
-		syslog(LOG_INFO, "[-NCP-] Router: Total %d router%s", num_router, (num_router > 1) ? "es" : "");
+		syslog(LOG_INFO, "[-NCP-] Router: Total %d router%s", num_router, (num_router > 1) ? "s" : "");
 
 
 	} else if (key == SPINEL_PROP_NET_PARTITION_ID) {
@@ -3099,7 +3102,6 @@ SpinelNCPInstance::add_unicast_address_on_ncp(const struct in6_addr &addr, uint8
 
 	syslog(LOG_NOTICE, "Adding address \"%s/%d\" to NCP", in6_addr_to_string(addr).c_str(), prefix_len);
 
-	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
 	factory.set_callback(cb);
 
 	factory.add_command(
@@ -3128,7 +3130,6 @@ SpinelNCPInstance::remove_unicast_address_on_ncp(const struct in6_addr& addr, ui
 
 	syslog(LOG_NOTICE, "Removing address \"%s/%d\" from NCP", in6_addr_to_string(addr).c_str(), prefix_len);
 
-	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
 	factory.set_callback(cb);
 
 	factory.add_command(
@@ -3153,7 +3154,6 @@ SpinelNCPInstance::add_multicast_address_on_ncp(const struct in6_addr &addr, Cal
 
 	syslog(LOG_NOTICE, "Adding multicast address \"%s\" to NCP", in6_addr_to_string(addr).c_str());
 
-	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
 	factory.set_callback(cb);
 
 	factory.add_command(
@@ -3176,7 +3176,6 @@ SpinelNCPInstance::remove_multicast_address_on_ncp(const struct in6_addr &addr, 
 
 	syslog(LOG_NOTICE, "Removing multicast address \"%s\" from NCP", in6_addr_to_string(addr).c_str());
 
-	factory.set_lock_property(SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE);
 	factory.set_callback(cb);
 
 	factory.add_command(
